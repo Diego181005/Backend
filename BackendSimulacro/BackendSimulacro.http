@@ -1,0 +1,6 @@
+@BackendSimulacro_HostAddress = http://localhost:5278
+
+GET {{BackendSimulacro_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
