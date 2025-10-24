@@ -38,19 +38,22 @@ namespace BackendSimulacro.Controllers
             return Ok(usuarios);
         }
         [HttpDelete("{id}")]
-        [Authorize] // Debe estar logueado
+        [Authorize]
         public async Task<IActionResult> EliminarUsuario(int id)
         {
             var usuario = await _context.Usuarios.FindAsync(id);
             if (usuario == null)
                 return NotFound("Usuario no encontrado.");
 
-            // Obtener id y rol del usuario que hace la petición
+            // Obtener claims del token
             var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var currentUserRole = int.Parse(User.FindFirstValue(ClaimTypes.Role)!);
+            var currentUserRoleStr = User.FindFirstValue(ClaimTypes.Role)!;
+
+            // Convertir string a enum
+            var currentUserRole = Enum.Parse<RolUsuario>(currentUserRoleStr);
 
             // Solo admin o dueño de la cuenta puede eliminar
-            if (currentUserRole != 3 && currentUserId != id) // 3 = Admin
+            if (currentUserRole != RolUsuario.Administrador && currentUserId != id)
                 return Forbid("No tienes permisos para eliminar este usuario.");
 
             _context.Usuarios.Remove(usuario);

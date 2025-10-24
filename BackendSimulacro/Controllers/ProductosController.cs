@@ -44,7 +44,7 @@ public class ProductosController : ControllerBase
 
     // POST: api/productos
     [HttpPost]
-    [Authorize(Roles = "2")] // Solo empresas
+    [Authorize(Roles = "Empresa")] // Solo empresas
     public async Task<ActionResult<ProductoResponseDto>> CrearProducto(ProductoDto dto)
     {
         var empresaId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -68,5 +68,54 @@ public class ProductosController : ControllerBase
             Stock = producto.Stock,
             EmpresaId = producto.EmpresaId
         });
+    }
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Empresa,Administador")]
+    public async Task<ActionResult<ProductoResponseDto>> EditarProducto(int id, ProductoDto dto)
+    {
+        var empresaId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        // Buscar el producto
+        var producto = await _context.Productos.FirstOrDefaultAsync(p => p.Id == id);
+
+        if (producto == null) return NotFound("Producto no encontrado");
+
+        // Verificar que pertenezca a la empresa
+        if (producto.EmpresaId != empresaId) return Forbid("No puedes editar este producto");
+
+        // Actualizar campos permitidos
+        producto.Nombre = dto.Nombre;
+        producto.Precio = dto.Precio;
+        producto.Stock = dto.Stock;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new ProductoResponseDto
+        {
+            Id = producto.Id,
+            Nombre = producto.Nombre,
+            Precio = producto.Precio,
+            Stock = producto.Stock,
+            EmpresaId = producto.EmpresaId
+        });
+    }
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "Empresa,Administrador")]
+    public async Task<IActionResult> EliminarProducto(int id)
+    {
+        var empresaId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        // Buscar el producto
+        var producto = await _context.Productos.FirstOrDefaultAsync(p => p.Id == id);
+
+        if (producto == null) return NotFound("Producto no encontrado");
+
+        // Verificar que pertenezca a la empresa
+        if (producto.EmpresaId != empresaId) return Forbid("No puedes eliminar este producto");
+
+        _context.Productos.Remove(producto);
+        await _context.SaveChangesAsync();
+
+        return NoContent(); // 204
     }
 }
