@@ -46,81 +46,99 @@ namespace BackendSimulacro.Controllers
             return Ok(carritoResponse);
         }
         
-        // POST: api/carrito
         [HttpPost]
-        public async Task<IActionResult> AgregarProducto(CarritoItemDto dto)
+        [Authorize(Roles = "Usuario")]
+        public async Task<ActionResult<IEnumerable<CarritoResponseDto>>> AgregarProducto(CarritoItemDto dto)
         {
-            var usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
+            // 1) Validaciones básicas
+            if (dto.Cantidad <= 0)
+                return BadRequest("La cantidad debe ser mayor a cero.");
+
+            var producto = await _context.Productos.FindAsync(dto.ProductoId);
+            if (producto == null)
+                return NotFound("El producto no existe.");
+
+            // 2) Traer el carrito con Items + Producto (evita NullReference)
             var carrito = await _context.Carritos
-                .Include(c => c.Items).ThenInclude(carritoItem => carritoItem.Producto)
-                .FirstOrDefaultAsync(c => c.UsuarioId == usuarioId);
+                .Include(c => c.Items)
+                .ThenInclude(i => i.Producto)
+                .FirstOrDefaultAsync(c => c.UsuarioId == userId);
 
             if (carrito == null)
             {
-                carrito = new Carrito { UsuarioId = usuarioId };
+                carrito = new Carrito { UsuarioId = userId, Items = new List<CarritoItem>() };
                 _context.Carritos.Add(carrito);
-                await _context.SaveChangesAsync();
             }
 
+            // 3) Agregar/sumar item
             var item = carrito.Items.FirstOrDefault(i => i.ProductoId == dto.ProductoId);
-            if (item != null)
+            if (item == null)
             {
-                item.Cantidad += dto.Cantidad;
+                item = new CarritoItem
+                {
+                    ProductoId = producto.Id,
+                    Cantidad = dto.Cantidad,
+                    Precio = producto.Precio, // decimal en tu modelo
+                    Producto = producto       // asegura que no sea null en esta request
+                };
+                carrito.Items.Add(item);
             }
             else
             {
-                carrito.Items.Add(new CarritoItem
-                {
-                    ProductoId = dto.ProductoId,
-                    Cantidad = dto.Cantidad
-                });
+                item.Cantidad += dto.Cantidad;
             }
 
             await _context.SaveChangesAsync();
 
-            // Retornar el carrito actualizado
-            var response = carrito.Items.Select(i => new CarritoResponseDto
+            // 4) Proyección a TU CarritoResponseDto (sin clases nuevas)
+            var result = carrito.Items.Select(i => new CarritoResponseDto
             {
                 Id = i.Id,
                 ProductoId = i.ProductoId,
-                NombreProducto = i.Producto.Nombre,
-                Precio = i.Producto.Precio,
+                NombreProducto = i.Producto?.Nombre ?? string.Empty,
                 Cantidad = i.Cantidad,
-                Subtotal = i.Cantidad * i.Producto.Precio
+                Precio = i.Precio, // decimal
+                Subtotal = i.Precio * i.Cantidad
             }).ToList();
 
-            return Ok(response);
+            return Ok(result);
         }
 
-        // PUT: api/carrito/{itemId}
-        [HttpPut("{itemId}")]
-        public async Task<IActionResult> ActualizarCantidad(int itemId, CarritoItemDto dto)
+        [HttpPut("{itemId:int}")]
+        [Authorize(Roles = "Usuario")]
+        public async Task<ActionResult<IEnumerable<CarritoResponseDto>>> ActualizarCantidad(int itemId, [FromBody] int cantidad)
         {
-            var usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            if (cantidad <= 0) return BadRequest("La cantidad debe ser mayor a cero.");
 
-            var item = await _context.CarritoItems
-                .Include(i => i.Carrito)
-                .Include(i => i.Producto)
-                .FirstOrDefaultAsync(i => i.Id == itemId && i.Carrito.UsuarioId == usuarioId);
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-            if (item == null) return NotFound("Producto no encontrado en tu carrito");
+            var carrito = await _context.Carritos
+                .Include(c => c.Items).ThenInclude(i => i.Producto)
+                .FirstOrDefaultAsync(c => c.UsuarioId == userId);
 
-            item.Cantidad = dto.Cantidad;
+            if (carrito == null) return NotFound("No tienes carrito.");
+
+            var item = carrito.Items.FirstOrDefault(i => i.Id == itemId);
+            if (item == null) return NotFound("Item no encontrado.");
+
+            item.Cantidad = cantidad;
             await _context.SaveChangesAsync();
 
-            var response = new CarritoResponseDto
+            var result = carrito.Items.Select(i => new CarritoResponseDto
             {
-                Id = item.Id,
-                ProductoId = item.ProductoId,
-                NombreProducto = item.Producto.Nombre,
-                Precio = item.Producto.Precio,
-                Cantidad = item.Cantidad,
-                Subtotal = item.Cantidad * item.Producto.Precio
-            };
+                Id = i.Id,
+                ProductoId = i.ProductoId,
+                NombreProducto = i.Producto?.Nombre ?? string.Empty,
+                Cantidad = i.Cantidad,
+                Precio = i.Precio,
+                Subtotal = i.Precio * i.Cantidad
+            }).ToList();
 
-            return Ok(response);
+            return Ok(result);
         }
+
 
         // DELETE: api/carrito/{itemId}
         [HttpDelete("{itemId}")]

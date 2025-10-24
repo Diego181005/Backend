@@ -53,6 +53,9 @@ namespace BackendSimulacro.Migrations
                     b.Property<int>("CarritoId")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("Precio")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("ProductoId")
                         .HasColumnType("int");
 
