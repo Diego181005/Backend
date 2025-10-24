@@ -70,7 +70,7 @@ public class ProductosController : ControllerBase
         });
     }
     [HttpPut("{id}")]
-    [Authorize(Roles = "Empresa,Administador")]
+    [Authorize(Roles = "Empresa,Administrador")]
     public async Task<ActionResult<ProductoResponseDto>> EditarProducto(int id, ProductoDto dto)
     {
         var empresaId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
