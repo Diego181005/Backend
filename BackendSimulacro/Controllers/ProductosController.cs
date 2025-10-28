@@ -111,7 +111,8 @@ public class ProductosController : ControllerBase
         if (producto == null) return NotFound("Producto no encontrado");
 
         // Verificar que pertenezca a la empresa
-        if (producto.EmpresaId != empresaId) return Forbid("No puedes eliminar este producto");
+        if (!User.IsInRole("Administrador") && producto.EmpresaId != empresaId)
+            return Forbid("No puedes eliminar este producto");
 
         _context.Productos.Remove(producto);
         await _context.SaveChangesAsync();

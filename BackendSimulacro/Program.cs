@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-
+//https://app-simulacro-1.azurewebsites.net/apihttps://app-simulacro-1.azurewebsites.net/api
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.

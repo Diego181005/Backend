@@ -14,6 +14,7 @@ namespace BackendSimulacro.Controllers
         private readonly AppDbContext _context;
         private readonly TokenService _tokenService;
 
+        
         public AuthController(AppDbContext context, TokenService tokenService)
         {
             _context = context;
