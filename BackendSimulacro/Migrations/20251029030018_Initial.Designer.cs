@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BackendSimulacro.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251024200838_ArreglarCarrito")]
-    partial class ArreglarCarrito
+    [Migration("20251029030018_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -55,6 +55,9 @@ namespace BackendSimulacro.Migrations
 
                     b.Property<int>("CarritoId")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("Precio")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("ProductoId")
                         .HasColumnType("int");

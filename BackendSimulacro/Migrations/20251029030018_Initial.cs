@@ -5,11 +5,26 @@
 namespace BackendSimulacro.Migrations
 {
     /// <inheritdoc />
-    public partial class CrearCarrito : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "Usuarios",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Nombre = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Rol = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Usuarios", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Carritos",
                 columns: table => new
@@ -30,6 +45,28 @@ namespace BackendSimulacro.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Productos",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Nombre = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Precio = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Stock = table.Column<int>(type: "int", nullable: false),
+                    EmpresaId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Productos", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Productos_Usuarios_EmpresaId",
+                        column: x => x.EmpresaId,
+                        principalTable: "Usuarios",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "CarritoItems",
                 columns: table => new
                 {
@@ -37,6 +74,7 @@ namespace BackendSimulacro.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     CarritoId = table.Column<int>(type: "int", nullable: false),
                     ProductoId = table.Column<int>(type: "int", nullable: false),
+                    Precio = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Cantidad = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -70,6 +108,11 @@ namespace BackendSimulacro.Migrations
                 name: "IX_Carritos_UsuarioId",
                 table: "Carritos",
                 column: "UsuarioId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Productos_EmpresaId",
+                table: "Productos",
+                column: "EmpresaId");
         }
 
         /// <inheritdoc />
@@ -80,6 +123,12 @@ namespace BackendSimulacro.Migrations
 
             migrationBuilder.DropTable(
                 name: "Carritos");
+
+            migrationBuilder.DropTable(
+                name: "Productos");
+
+            migrationBuilder.DropTable(
+                name: "Usuarios");
         }
     }
 }
